@@ -1,0 +1,76 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - titanic-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-stack
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - titanic-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio-data:/data
+    networks:
+      - titanic-network
+
+  server:
+    build: .
+    container_name: titanic_server
+    env_file:
+      - .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./titanic_model.pth:/app/titanic_model.pth:ro
+      - ./scaler.pkl:/app/scaler.pkl:ro
+    restart: unless-stopped
+    networks:
+      - titanic-network
+
+networks:
+  titanic-network:
+    driver: bridge
+
+volumes:
+  minio-data:

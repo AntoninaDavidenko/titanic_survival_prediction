@@ -7,14 +7,17 @@ import torch
 import io
 import hashlib
 from minio import Minio
-
+from dotenv import load_dotenv
+import os
 from model import NeuralNetwork
 
+load_dotenv()
+
 client = Minio(
-    "localhost:9000",
-    access_key="minioadmin",
-    secret_key="minioadmin",
-    secure=False  # False -> without HTTPS
+    endpoint=os.getenv('MINIO_ENDPOINT'),
+    access_key=os.getenv('MINIO_LOGIN'),
+    secret_key=os.getenv('MINIO_PASSWORD'),
+    secure=os.getenv('MINIO_SECURE') == 'True'
 )
 
 bucket_name = "titanic"
@@ -33,9 +36,11 @@ response.close()
 response.release_conn()
 
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host='localhost'))
+    pika.ConnectionParameters(host=os.getenv('RABBITMQ_HOST'), port=os.getenv('RABBITMQ_PORT')))
 
 channel = connection.channel()
+
+channel.exchange_declare(exchange='titanic', exchange_type='direct', durable=True)
 
 channel.queue_declare(queue='queue.diia.titanic.req')
 channel.queue_bind(exchange='titanic',
@@ -43,7 +48,7 @@ channel.queue_bind(exchange='titanic',
                    routing_key='queue.diia.titanic.req')
 
 
-pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+pool = redis.ConnectionPool(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), db=os.getenv('REDIS_DB'))
 r = redis.Redis(connection_pool=pool)
 
 

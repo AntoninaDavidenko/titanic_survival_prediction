@@ -11,7 +11,7 @@ class TitanicClient(object):
             pika.ConnectionParameters(host='localhost'))
 
         self.channel = self.connection.channel()
-        self.channel.exchange_declare(exchange='titanic', exchange_type='direct')
+        self.channel.exchange_declare(exchange='titanic', exchange_type='direct', durable=True)
 
         result = self.channel.queue_declare(queue='', exclusive=True)
         self.callback_queue = result.method.queue
@@ -49,7 +49,7 @@ titanic = TitanicClient()
 
 message = ' '.join(sys.argv[1:])
 print(f" [x] Requesting info")
-user_data = {"Pclass": 3, "Age": 44, "SibSp": 0, "Parch": 0, "Fare": 25.0, "Sex_male": 1, "Embarked_Q": 0, "Embarked_S": 0}
+user_data = {"Pclass": 1, "Age": 15, "SibSp": 0, "Parch": 0, "Fare": 25.0, "Sex_male": 0, "Embarked_Q": 0, "Embarked_S": 0}
 response = titanic.call(user_data)
 
 print(f" [.] Got {response}")

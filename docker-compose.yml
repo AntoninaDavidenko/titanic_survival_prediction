@@ -61,9 +61,6 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
-    volumes:
-      - ./titanic_model.pth:/app/titanic_model.pth:ro
-      - ./scaler.pkl:/app/scaler.pkl:ro
     restart: unless-stopped
     networks:
       - titanic-network
